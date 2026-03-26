@@ -31,6 +31,44 @@ html, body {
     color: var(--text-dark);
 }
 
+/* ==================== LOGIN MODAL ==================== */
+#loginModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+#loginModal .modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+#loginModal .modal-header {
+    padding: 30px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+}
+
+#loginModal .modal-body {
+    padding: 30px;
+    background: white;
+}
+
+#loginModal .modal-footer {
+    padding: 20px 30px;
+    background: #f9fafb;
+    border-top: 1px solid var(--border-color);
+}
+
 /* ==================== LAYOUT ==================== */
 .container {
     display: flex;
@@ -288,6 +326,36 @@ html, body {
     background: #059669;
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+}
+
+/* Google Login Styles */
+.btn-small {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-radius: 4px !important;
+}
+
+.btn-small:hover {
+    transform: translateY(-1px) !important;
+}
+
+#userWelcome {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%) !important;
+    border: 1px solid #a5d6a7 !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Header Adjustments for Google Button */
+.header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    flex-wrap: wrap !important;
 }
 
 .btn-whatsapp {

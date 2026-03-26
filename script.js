@@ -1,4 +1,65 @@
+// ==================== GOOGLE LOGIN HANDLER ==================== //
+
+// This function is called when user signs in with Google
+function handleCredentialResponse(response) {
+    // Decode the JWT token to get user info
+    const base64Url = response.credential.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+        atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')
+    );
+    
+    const userData = JSON.parse(jsonPayload);
+    
+    // Store user data in localStorage
+    const userInfo = {
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture,
+        loggedInAt: new Date().toISOString()
+    };
+    localStorage.setItem('googleUser', JSON.stringify(userInfo));
+    
+    // Update UI
+    displayUserInfo(userInfo);
+    
+    console.log('✅ Logged in as:', userData.name);
+}
+
+// Display user info in header
+function displayUserInfo(userInfo) {
+    document.getElementById('googleLoginContainer').style.display = 'none';
+    document.getElementById('userWelcome').style.display = 'inline-block';
+    document.getElementById('userDisplayName').textContent = '👤 ' + userInfo.name;
+    document.getElementById('userPicture').src = userInfo.picture;
+}
+
+// Logout function
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('googleUser');
+        location.reload();
+    }
+}
+
+// Check if user is already logged in on page load
+function checkLoginStatus() {
+    const savedUser = localStorage.getItem('googleUser');
+    if (savedUser) {
+        const userInfo = JSON.parse(savedUser);
+        displayUserInfo(userInfo);
+    }
+}
+
+// Call this when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    checkLoginStatus();
+});
+
 // ==================== DATA MANAGEMENT ==================== //
+
 class BillingSystem {
     constructor() {
         this.bills = this.loadData('bills') || [];
@@ -387,14 +448,126 @@ class UIManager {
         this.currentViewBill = null;
         this.currentProductId = null;
         this.currentImageData = null;
+        this.authService = getAuthService();
         this.init();
     }
 
     init() {
+        // Check if user is authenticated
+        if (this.authService.isAuthenticated()) {
+            // User is logged in
+            this.showMainApp();
+        } else {
+            // User needs to login
+            this.showLoginScreen();
+        }
+    }
+
+    showLoginScreen() {
+        // Setup authentication handlers
+        this.setupAuthHandlers();
+        
+        // Show login modal
+        document.getElementById('loginModal').style.display = 'flex';
+        document.querySelector('.container').style.display = 'none';
+    }
+
+    showMainApp() {
+        // Get current user
+        const user = this.authService.getCurrentUser();
+        
+        // Hide login modal
+        document.getElementById('loginModal').style.display = 'none';
+        document.querySelector('.container').style.display = 'flex';
+        
+        // Display user info
+        this.displayUserInfo(user);
+        
+        // Initialize app
         this.setupEventListeners();
         this.updateDateTime();
         setInterval(() => this.updateDateTime(), 1000);
         this.loadBillingView();
+    }
+
+    setupAuthHandlers() {
+        // Demo login button
+        const demoLoginBtn = document.getElementById('demoLoginBtn');
+        if (demoLoginBtn) {
+            demoLoginBtn.addEventListener('click', () => this.handleDemoLogin());
+        }
+
+        // Set up global callback for Google Sign-In
+        window.handleGoogleResponse = (response) => {
+            try {
+                this.authService.handleCredentialResponse(response);
+                this.showMainApp();
+            } catch (error) {
+                console.error('Authentication error:', error);
+                this.showAuthError('Authentication failed: ' + error.message);
+            }
+        };
+    }
+
+    handleDemoLogin() {
+        // Create demo user
+        const demoUser = {
+            id: 'demo-' + Date.now(),
+            email: 'demo@billpro.com',
+            name: 'Demo User',
+            picture: '👤',
+            emailVerified: false,
+            authTime: new Date().toISOString()
+        };
+
+        // Store in auth service
+        this.authService.user = demoUser;
+        this.authService.saveSession();
+
+        // Show main app
+        this.showMainApp();
+    }
+
+    showAuthError(message) {
+        const errorDiv = document.getElementById('authError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    displayUserInfo(user) {
+        const userInfoDiv = document.getElementById('userInfo');
+        const userNameEl = document.getElementById('userName');
+        const userEmailEl = document.getElementById('userEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if (userInfoDiv && user) {
+            userNameEl.textContent = user.name || 'User';
+            userEmailEl.textContent = user.email || 'email@example.com';
+            userInfoDiv.style.display = 'block';
+            logoutBtn.style.display = 'block';
+            
+            // Setup logout button
+            logoutBtn.removeEventListener('click', this.handleLogout.bind(this));
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+    }
+
+    async handleLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+            try {
+                await this.authService.logout();
+                // Reload page to show login screen
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Error during logout: ' + error.message);
+            }
+        }
     }
 
     // ==================== EVENT LISTENERS ==================== //
@@ -482,6 +655,12 @@ class UIManager {
 
         // Setup Quick Add Modal
         this.setupQuickAddModal();
+
+        // Google Logout Button
+        const logoutGoogleBtn = document.getElementById('logoutGoogleBtn');
+        if (logoutGoogleBtn) {
+            logoutGoogleBtn.addEventListener('click', () => handleLogout());
+        }
     }
 
     // ==================== VIEW MANAGEMENT ==================== //
