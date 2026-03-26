@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Software - Professional Invoice Management</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>💳 BillPro</h2>
+                <p>Invoice Manager</p>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-view="bills">
+                    <span class="icon">📄</span>
+                    <span>Create Bill</span>
+                </button>
+                <button class="nav-btn" data-view="bills-history">
+                    <span class="icon">📋</span>
+                    <span>Bills History</span>
+                </button>
+                <button class="nav-btn" data-view="analytics">
+                    <span class="icon">📊</span>
+                    <span>Analytics</span>
+                </button>
+                <button class="nav-btn" data-view="customers">
+                    <span class="icon">👥</span>
+                    <span>Customers</span>
+                </button>
+                <button class="nav-btn" data-view="products">
+                    <span class="icon">📦</span>
+                    <span>Products</span>
+                </button>
+                <button class="nav-btn" data-view="quick-add">
+                    <span class="icon">⚡</span>
+                    <span>Quick Add</span>
+                </button>
+                <button class="nav-btn" data-view="settings">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="clearDataBtn" class="danger-btn" title="Clear all data">
+                    🗑️ Clear Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="pageTitle">Create Bill</h1>
+                <div class="header-actions">
+                    <span id="currentDateTime"></span>
+                </div>
+            </header>
+
+            <!-- CREATE BILL VIEW -->
+            <section id="bills-view" class="view active">
+                <div class="content-wrapper">
+                    <!-- Customer Section -->
+                    <div class="section customer-section">
+                        <h2>Customer Details</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Invoice Number</label>
+                                <input type="text" id="invoiceNumber" readonly class="readonly-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Date & Time</label>
+                                <input type="text" id="billDateTime" readonly class="readonly-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Customer Name *</label>
+                                <input type="text" id="customerName" placeholder="Enter customer name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" id="customerPhone" placeholder="Enter phone number">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Products Gallery -->
+                    <div class="section products-gallery-section">
+                        <div class="section-header">
+                            <h2>Quick Add Products</h2>
+                            <button id="toggleGalleryBtn" class="btn btn-secondary">Show All Products</button>
+                        </div>
+                        <div id="productsGallery" class="products-gallery">
+                            <!-- Product cards displayed here -->
+                        </div>
+                    </div>
+
+                    <!-- Bill Items Section -->
+                    <div class="section items-section">
+                        <div class="section-header">
+                            <h2>Bill Items</h2>
+                            <button id="addItemBtn" class="btn btn-primary">+ Add Item</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <!-- Items added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Bill Summary Section -->
+                    <div class="section summary-section">
+                        <div class="summary-content">
+                            <div class="summary-item">
+                                <label>Subtotal:</label>
+                                <span id="subtotal" class="amount">₹ 0.00</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>GST (18%):</label>
+                                <div>
+                                    <input type="checkbox" id="gstCheckbox">
+                                    <span id="gstAmount" class="amount">₹ 0.00</span>
+                                </div>
+                            </div>
+                            <div class="summary-item grand-total">
+                                <label>Grand Total:</label>
+                                <span id="grandTotal" class="amount">₹ 0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Section -->
+                    <div class="section payment-section">
+                        <h2>Payment Method</h2>
+                        <div class="payment-methods">
+                            <button class="payment-btn active" data-method="cash">💵 Cash</button>
+                            <button class="payment-btn" data-method="upi">📱 UPI</button>
+                            <button class="payment-btn" data-method="card">💳 Card</button>
+                            <button class="payment-btn" data-method="credit">📑 Credit</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="section action-buttons">
+                        <button id="printBillBtn" class="btn btn-secondary">🖨️ Print Invoice</button>
+                        <button id="whatsappBillBtn" class="btn btn-secondary" title="Send to WhatsApp">💬 WhatsApp</button>
+                        <button id="resetBillBtn" class="btn btn-secondary">🔄 Reset</button>
+                        <button id="saveBillBtn" class="btn btn-success">✓ Save & Close</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BILLS HISTORY VIEW -->
+            <section id="bills-history-view" class="view">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Bills History</h2>
+                            <div class="search-filter">
+                                <input type="text" id="billSearchInput" placeholder="Search by invoice or customer...">
+                                <button id="exportCsvBtn" class="btn btn-secondary">📥 Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice #</th>
+                                        <th>Customer</th>
+                                        <th>Phone</th>
+                                        <th>Date & Time</th>
+                                        <th>Amount</th>
+                                        <th>Payment</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="billsHistoryBody">
+                                    <!-- Bills listed here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ANALYTICS VIEW -->
+            <section id="analytics-view" class="view">
+                <div class="content-wrapper">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalBillsToday">0</div>
+                            <div class="stat-label">Bills Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalRevenueToday">₹ 0</div>
+                            <div class="stat-label">Revenue Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="averageBillToday">₹ 0</div>
+                            <div class="stat-label">Avg Bill Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalMonthlyRevenue">₹ 0</div>
+                            <div class="stat-label">Monthly Revenue</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h3>Daily Revenue (Last 7 Days)</h3>
+                            <canvas id="dailyRevenueChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Payment Method Breakdown</h3>
+                            <canvas id="paymentMethodChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Top Selling Products</h3>
+                            <canvas id="topProductsChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Monthly Revenue Trend</h3>
+                            <canvas id="monthlyRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CUSTOMERS VIEW -->
+            <section id="customers-view" class="view">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Customer List</h2>
+                            <input type="text" id="customerSearchInput" placeholder="Search customers...">
+                        </div>
+                        <div class="table-responsive">
+                            <table class="customers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Customer Name</th>
+                                        <th>Phone</th>
+                                        <th>Total Bills</th>
+                                        <th>Total Spent</th>
+                                        <th>Last Visit</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customersTableBody">
+                                    <!-- Customers listed here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QUICK ADD VIEW -->
+            <section id="quick-add-view" class="view">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Products - Quick Add</h2>
+                        </div>
+                        <div id="quickAddGallery" class="products-gallery-large">
+                            <!-- Product cards displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PRODUCTS VIEW -->
+            <section id="products-view" class="view">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Product Inventory</h2>
+                            <button id="addProductBtn" class="btn btn-primary">+ Add Product</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Price</th>
+                                        <th>Stock</th>
+                                        <th>Image</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <!-- Products listed here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS VIEW -->
+            <section id="settings-view" class="view">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <h2>⚙️ Application Settings</h2>
+                    </div>
+
+                    <!-- WhatsApp Settings -->
+                    <div class="section">
+                        <h3>💬 WhatsApp Configuration</h3>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item">
+                                <label for="defaultWhatsappNumber">Default WhatsApp Number for Auto-Send:</label>
+                                <input type="tel" id="defaultWhatsappNumber" placeholder="Enter WhatsApp number (e.g., 9159888991)">
+                                <small>This number will receive bills automatically after payment</small>
+                            </div>
+
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="autoSendWhatsapp">
+                                <label for="autoSendWhatsapp">✅ Automatically send bills to WhatsApp after payment (1-click only)</label>
+                                <small>When enabled, bill will auto-open WhatsApp with your default number after saving</small>
+                            </div>
+
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="fullAutoSendWhatsapp">
+                                <label for="fullAutoSendWhatsapp">⚡ Fully Automatic Send (Experimental - requires backend)</label>
+                                <small>For advanced: requires WhatsApp Business API setup</small>
+                            </div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button id="testWhatsappBtn" class="btn btn-primary">📱 Test WhatsApp</button>
+                            <button id="saveSettingsBtn" class="btn btn-success">✓ Save Settings</button>
+                        </div>
+                    </div>
+
+                    <!-- Business Settings -->
+                    <div class="section">
+                        <h3>🏪 Business Details</h3>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item">
+                                <label for="businessName">Business Name:</label>
+                                <input type="text" id="businessName" placeholder="Enter your business name">
+                            </div>
+
+                            <div class="settings-item">
+                                <label for="businessPhone">Business Phone:</label>
+                                <input type="tel" id="businessPhone" placeholder="Enter business phone number">
+                            </div>
+
+                            <div class="settings-item">
+                                <label for="businessEmail">Business Email:</label>
+                                <input type="email" id="businessEmail" placeholder="Enter business email">
+                            </div>
+                        </div>
+
+                        <button id="saveBusinessSettingsBtn" class="btn btn-success">✓ Save Business Settings</button>
+                    </div>
+
+                    <!-- Bill Settings -->
+                    <div class="section">
+                        <h3>📄 Invoice Settings</h3>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item">
+                                <label for="gstRate">Default GST Rate (%):</label>
+                                <input type="number" id="gstRate" value="18" min="0" max="100" step="0.5">
+                            </div>
+
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="enableGstByDefault">
+                                <label for="enableGstByDefault">Enable GST by default on new bills</label>
+                            </div>
+
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="showInvoiceDetails">
+                                <label for="showInvoiceDetails">Show business details in invoices</label>
+                            </div>
+                        </div>
+
+                        <button id="saveBillSettingsBtn" class="btn btn-success">✓ Save Invoice Settings</button>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="section">
+                        <h3>⚡ Advanced Options</h3>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="enableNotifications">
+                                <label for="enableNotifications">Enable browser notifications</label>
+                            </div>
+
+                            <div class="settings-item checkbox-item">
+                                <input type="checkbox" id="soundAlerts">
+                                <label for="soundAlerts">Sound alerts for important actions</label>
+                            </div>
+                        </div>
+
+                        <button id="resetSettings" class="btn btn-secondary" style="margin-right: 8px;">🔄 Reset to Defaults</button>
+                        <button id="exportSettings" class="btn btn-secondary">📥 Export Settings</button>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div class="section">
+                        <h3>📚 Help & Documentation</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+                            <a href="README.md" target="_blank" class="btn btn-info" style="text-decoration: none; text-align: center; background: #3b82f6; color: white;">📖 User Guide</a>
+                            <a href="WHATSAPP_GUIDE.md" target="_blank" class="btn btn-info" style="text-decoration: none; text-align: center; background: #3b82f6; color: white;">💬 WhatsApp Guide</a>
+                            <a href="UPDATES.md" target="_blank" class="btn btn-info" style="text-decoration: none; text-align: center; background: #3b82f6; color: white;">✨ What's New</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Add Item -->
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Item to Bill</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" id="productNameInput" placeholder="Search or enter product name" autocomplete="off">
+                    <ul id="productSuggestions" class="suggestions-list"></ul>
+                </div>
+                <div class="form-group">
+                    <label>Quantity *</label>
+                    <input type="number" id="quantityInput" placeholder="Enter quantity" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Price per Unit *</label>
+                    <input type="number" id="priceInput" placeholder="Enter price" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelAddItemBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmAddItemBtn" class="btn btn-primary">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Add Product -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Product</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" id="productNameInput2" placeholder="Enter product name">
+                </div>
+                <div class="form-group">
+                    <label>Price *</label>
+                    <input type="number" id="productPriceInput" placeholder="Enter price" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" id="productStockInput" placeholder="Enter stock quantity" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelAddProductBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmAddProductBtn" class="btn btn-primary">Add Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Print Template (Hidden) -->
+    <div id="invoicePrintTemplate" style="display:none;">
+        <!-- Invoice template will be generated here -->
+    </div>
+
+    <!-- View Bill Details Modal -->
+    <div id="viewBillModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bill Details</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="billDetailsContent">
+                <!-- Bill details will be displayed here -->
+            </div>
+            <div class="modal-footer">
+                <button id="printBillDetailBtn" class="btn btn-secondary">🖨️ Print</button>
+                <button id="whatsappBillDetailBtn" class="btn btn-secondary">💬 WhatsApp</button>
+                <button id="closeBillDetailBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Product Image Modal -->
+    <div id="uploadImageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Product Image</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Select Image</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                <div id="imagePreview" class="image-preview"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelUploadBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmUploadBtn" class="btn btn-primary">Use Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
