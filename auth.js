@@ -126,13 +126,47 @@ class AuthService {
         // Check if user session exists
         if (this.user) return true;
 
-        // Try to load from localStorage
+        // Try to load Google session from localStorage
         const session = this.loadSession();
-        return !!session;
+        if (session) return true;
+
+        // Check for phone authentication
+        const phoneUser = localStorage.getItem('phoneUser');
+        if (phoneUser) {
+            try {
+                this.user = JSON.parse(phoneUser);
+                return true;
+            } catch (e) {
+                console.error('Error loading phone user:', e);
+            }
+        }
+
+        return false;
     }
 
     getCurrentUser() {
-        return this.user;
+        // Check for existing user
+        if (this.user) return this.user;
+
+        // Try to load Google session
+        const session = this.loadSession();
+        if (session) {
+            this.user = session.user;
+            return this.user;
+        }
+
+        // Check for phone user
+        const phoneUser = localStorage.getItem('phoneUser');
+        if (phoneUser) {
+            try {
+                this.user = JSON.parse(phoneUser);
+                return this.user;
+            } catch (e) {
+                console.error('Error loading phone user:', e);
+            }
+        }
+
+        return null;
     }
 
     getToken() {

@@ -1,11 +1,20 @@
 /**
  * CONFIGURATION FILE FOR BILLPRO
- * Update this file with your Google OAuth 2.0 credentials
+ * Update this file with your Google OAuth 2.0 and Twilio SMS credentials
  */
 
 const CONFIG = {
     // Google OAuth 2.0 Configuration
     GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
+    
+    // Phone OTP / Twilio Configuration (for SMS verification)
+    TWILIO_CONFIG: {
+        ACCOUNT_SID: 'YOUR_TWILIO_ACCOUNT_SID',
+        AUTH_TOKEN: 'YOUR_TWILIO_AUTH_TOKEN',
+        VERIFY_SERVICE_ID: 'YOUR_TWILIO_VERIFY_SERVICE_ID',
+        TWILIO_PHONE_NUMBER: 'YOUR_TWILIO_PHONE_NUMBER',
+        IS_PRODUCTION: false  // Set to true when using real Twilio credentials
+    },
     
     // Application Settings
     APP_NAME: 'Sabari Cakes and Cafe',
@@ -15,9 +24,12 @@ const CONFIG = {
     // Authentication Settings
     SESSION_TIMEOUT: 3600, // 1 hour in seconds
     AUTO_LOGOUT: true,
+    OTP_EXPIRY_TIME: 600, // 10 minutes in seconds
+    MAX_OTP_ATTEMPTS: 3,
     
     // Feature Flags
     ENABLE_GOOGLE_AUTH: true,
+    ENABLE_PHONE_OTP_AUTH: true,
     ENABLE_DEMO_LOGIN: true,
     ENABLE_AUTO_LOGIN: true,
     

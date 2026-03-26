@@ -1009,6 +1009,108 @@ tr:hover {
         grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
         gap: 12px;
     }
+}
+
+/* ==================== PHONE OTP LOGIN STYLES ==================== */
+
+.auth-tab {
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.auth-tab:hover {
+    opacity: 0.8;
+}
+
+.auth-tab-active {
+    font-weight: bold;
+}
+
+#phoneLoginSection .form-group {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+#phoneLoginSection input[type="tel"],
+#phoneLoginSection select,
+#phoneLoginSection input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+#phoneLoginSection input[type="tel"]:focus,
+#phoneLoginSection select:focus,
+#phoneLoginSection input[type="text"]:focus {
+    outline: none;
+    border-color: #FF9800;
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+}
+
+#otpCode {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 24px;
+}
+
+#phoneError,
+#otpError {
+    padding: 10px;
+    background: #fee;
+    border-radius: 4px;
+    color: #c33;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+#phoneStep2 p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+#otpTimer {
+    display: none;
+    margin-top: 15px;
+    padding: 10px;
+    background: #fffbea;
+    border-radius: 4px;
+    color: #ea8600;
+    font-size: 12px;
+    border-left: 3px solid #ea8600;
+}
+
+#phoneStep2 button {
+    margin-top: 10px;
+}
+
+#resendOTPBtn,
+#changePhoneBtn {
+    background: transparent;
+    border: 1px solid #999;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    font-size: 12px;
+    padding: 10px;
+    transition: all 0.2s ease;
+}
+
+#resendOTPBtn:hover,
+#changePhoneBtn:hover {
+    background: #f5f5f5;
+    border-color: #666;
+}
+
+#resendOTPBtn:disabled,
+#changePhoneBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+    
 
     .products-gallery-large {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -1076,7 +1178,7 @@ tr:hover {
     .modal-content {
         max-height: 80vh;
     }
-}
+
 
 /* ==================== PRINT STYLES ==================== */
 @media print {

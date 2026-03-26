@@ -58,6 +58,253 @@ window.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
 });
 
+// ==================== PHONE OTP LOGIN HANDLER ==================== //
+
+// Initialize phone OTP service
+function initPhoneOTP() {
+    const phoneOTPConfig = {
+        accountSid: 'YOUR_TWILIO_ACCOUNT_SID',
+        authToken: 'YOUR_TWILIO_AUTH_TOKEN',
+        verifyServiceId: 'YOUR_TWILIO_VERIFY_SERVICE_ID',
+        twilioPhoneNumber: 'YOUR_TWILIO_PHONE_NUMBER',
+        isProduction: false // Set to true when using real Twilio credentials
+    };
+    initializePhoneOTP(phoneOTPConfig);
+}
+
+// Handle authentication tab switching
+function setupAuthTabs() {
+    const authTabGoogle = document.getElementById('authTabGoogle');
+    const authTabPhone = document.getElementById('authTabPhone');
+    const googleLoginSection = document.getElementById('googleLoginSection');
+    const phoneLoginSection = document.getElementById('phoneLoginSection');
+
+    if (!authTabGoogle || !authTabPhone) return;
+
+    authTabGoogle.addEventListener('click', () => {
+        authTabGoogle.classList.add('auth-tab-active');
+        authTabPhone.classList.remove('auth-tab-active');
+        authTabGoogle.style.borderBottomColor = '#4285F4';
+        authTabGoogle.style.color = '#4285F4';
+        authTabPhone.style.borderBottomColor = 'transparent';
+        authTabPhone.style.color = '#999';
+        googleLoginSection.style.display = 'block';
+        phoneLoginSection.style.display = 'none';
+    });
+
+    authTabPhone.addEventListener('click', () => {
+        authTabPhone.classList.add('auth-tab-active');
+        authTabGoogle.classList.remove('auth-tab-active');
+        authTabPhone.style.borderBottomColor = '#FF9800';
+        authTabPhone.style.color = '#FF9800';
+        authTabGoogle.style.borderBottomColor = 'transparent';
+        authTabGoogle.style.color = '#999';
+        phoneLoginSection.style.display = 'block';
+        googleLoginSection.style.display = 'none';
+        document.getElementById('phoneStep1').style.display = 'block';
+        document.getElementById('phoneStep2').style.display = 'none';
+    });
+}
+
+// Send OTP to phone number
+async function handleSendOTP() {
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    const countryCode = document.getElementById('countryCode').value;
+    const phoneError = document.getElementById('phoneError');
+    const sendOTPBtn = document.getElementById('sendOTPBtn');
+
+    phoneError.style.display = 'none';
+
+    if (!phoneNumber) {
+        phoneError.textContent = '❌ Please enter a phone number';
+        phoneError.style.display = 'block';
+        return;
+    }
+
+    try {
+        sendOTPBtn.disabled = true;
+        sendOTPBtn.textContent = 'Sending...';
+
+        // Get OTP service
+        const service = getPhoneOTPService();
+
+        // Format phone number
+        const fullPhoneNumber = service.formatPhoneNumber(phoneNumber, countryCode);
+
+        // Send OTP
+        const result = await service.sendOTP(fullPhoneNumber);
+
+        if (result.success) {
+            // Switch to OTP verification step
+            document.getElementById('phoneStep1').style.display = 'none';
+            document.getElementById('phoneStep2').style.display = 'block';
+            document.getElementById('verifyingPhone').textContent = fullPhoneNumber;
+            document.getElementById('otpCode').value = '';
+            document.getElementById('otpCode').focus();
+
+            // Start OTP timer
+            startOTPTimer(fullPhoneNumber);
+
+            // Store phone number for verification
+            sessionStorage.setItem('phoneNumberForOTP', fullPhoneNumber);
+
+            console.log('✅ OTP sent successfully to ' + fullPhoneNumber);
+        }
+    } catch (error) {
+        phoneError.textContent = '❌ ' + error.message;
+        phoneError.style.display = 'block';
+        console.error('Error sending OTP:', error);
+    } finally {
+        sendOTPBtn.disabled = false;
+        sendOTPBtn.textContent = 'Send OTP';
+    }
+}
+
+// Verify OTP code
+async function handleVerifyOTP() {
+    const otpCode = document.getElementById('otpCode').value.trim();
+    const phoneNumber = sessionStorage.getItem('phoneNumberForOTP');
+    const otpError = document.getElementById('otpError');
+    const verifyOTPBtn = document.getElementById('verifyOTPBtn');
+
+    otpError.style.display = 'none';
+
+    if (!otpCode || otpCode.length !== 6) {
+        otpError.textContent = '❌ Please enter a valid 6-digit OTP';
+        otpError.style.display = 'block';
+        return;
+    }
+
+    try {
+        verifyOTPBtn.disabled = true;
+        verifyOTPBtn.textContent = 'Verifying...';
+
+        const service = getPhoneOTPService();
+        const result = await service.verifyOTP(phoneNumber, otpCode);
+
+        if (result.verified) {
+            // Store phone user login info
+            const userInfo = {
+                name: 'Phone User',
+                phone: phoneNumber,
+                picture: '📱',
+                loginMethod: 'phone',
+                loggedInAt: new Date().toISOString()
+            };
+            localStorage.setItem('phoneUser', JSON.stringify(userInfo));
+            localStorage.setItem('loggedInUser', 'phone');
+
+            // Hide login modal
+            document.getElementById('loginModal').style.display = 'none';
+
+            // Update UI
+            displayPhoneUserInfo(userInfo);
+
+            // Clear session data
+            sessionStorage.removeItem('phoneNumberForOTP');
+
+            console.log('✅ Phone number verified! Logged in as ' + phoneNumber);
+        }
+    } catch (error) {
+        otpError.textContent = '❌ ' + error.message;
+        otpError.style.display = 'block';
+        console.error('Error verifying OTP:', error);
+    } finally {
+        verifyOTPBtn.disabled = false;
+        verifyOTPBtn.textContent = 'Verify OTP';
+    }
+}
+
+// Change phone number (go back to step 1)
+function handleChangePhone() {
+    document.getElementById('phoneStep2').style.display = 'none';
+    document.getElementById('phoneStep1').style.display = 'block';
+    document.getElementById('phoneNumber').value = '';
+    document.getElementById('otpCode').value = '';
+    document.getElementById('phoneError').style.display = 'none';
+    document.getElementById('otpError').style.display = 'none';
+    document.getElementById('phoneNumber').focus();
+}
+
+// Resend OTP
+async function handleResendOTP() {
+    const phoneNumber = sessionStorage.getItem('phoneNumberForOTP');
+    const resendOTPBtn = document.getElementById('resendOTPBtn');
+
+    try {
+        resendOTPBtn.disabled = true;
+        resendOTPBtn.textContent = 'Resending...';
+
+        const service = getPhoneOTPService();
+        const result = await service.resendOTP(phoneNumber);
+
+        if (result.success) {
+            document.getElementById('otpCode').value = '';
+            document.getElementById('otpError').style.display = 'none';
+            startOTPTimer(phoneNumber);
+            console.log('✅ New OTP sent to ' + phoneNumber);
+        }
+    } catch (error) {
+        document.getElementById('otpError').textContent = '❌ ' + error.message;
+        document.getElementById('otpError').style.display = 'block';
+    } finally {
+        resendOTPBtn.disabled = false;
+        resendOTPBtn.textContent = 'Resend OTP';
+    }
+}
+
+// Start OTP expiry timer
+function startOTPTimer(phoneNumber) {
+    let remainingTime = 600; // 10 minutes
+    const timerDisplay = document.getElementById('otpTime');
+    const otpTimerContainer = document.getElementById('otpTimer');
+
+    otpTimerContainer.style.display = 'block';
+
+    const timer = setInterval(() => {
+        remainingTime--;
+
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (remainingTime <= 0) {
+            clearInterval(timer);
+            otpTimerContainer.style.display = 'none';
+            const otpError = document.getElementById('otpError');
+            otpError.textContent = '❌ OTP has expired. Please request a new one.';
+            otpError.style.display = 'block';
+            document.getElementById('verifyOTPBtn').disabled = true;
+        }
+    }, 1000);
+}
+
+// Display phone user info in header
+function displayPhoneUserInfo(userInfo) {
+    document.getElementById('googleLoginContainer').style.display = 'none';
+    document.getElementById('userWelcome').style.display = 'inline-block';
+    document.getElementById('userDisplayName').textContent = '📱 ' + userInfo.phone;
+    document.getElementById('userPicture').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23FF9800" width="100" height="100"/><text x="50" y="70" font-size="60" text-anchor="middle" fill="white">📱</text></svg>';
+}
+
+// Check phone login status on page load
+function checkPhoneLoginStatus() {
+    const savedPhoneUser = localStorage.getItem('phoneUser');
+    if (savedPhoneUser) {
+        const userInfo = JSON.parse(savedPhoneUser);
+        displayPhoneUserInfo(userInfo);
+    }
+}
+
+// Enhanced logout to handle both Google and Phone logins
+function handlePhoneLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('phoneUser');
+        localStorage.removeItem('loggedInUser');
+        location.reload();
+    }
+}
+
 // ==================== DATA MANAGEMENT ==================== //
 
 class BillingSystem {
@@ -491,10 +738,36 @@ class UIManager {
     }
 
     setupAuthHandlers() {
+        // Initialize phone OTP service
+        initPhoneOTP();
+
         // Demo login button
         const demoLoginBtn = document.getElementById('demoLoginBtn');
         if (demoLoginBtn) {
             demoLoginBtn.addEventListener('click', () => this.handleDemoLogin());
+        }
+
+        // Set up phone login handlers
+        setupAuthTabs();
+
+        const sendOTPBtn = document.getElementById('sendOTPBtn');
+        if (sendOTPBtn) {
+            sendOTPBtn.addEventListener('click', handleSendOTP);
+        }
+
+        const verifyOTPBtn = document.getElementById('verifyOTPBtn');
+        if (verifyOTPBtn) {
+            verifyOTPBtn.addEventListener('click', handleVerifyOTP);
+        }
+
+        const resendOTPBtn = document.getElementById('resendOTPBtn');
+        if (resendOTPBtn) {
+            resendOTPBtn.addEventListener('click', handleResendOTP);
+        }
+
+        const changePhoneBtn = document.getElementById('changePhoneBtn');
+        if (changePhoneBtn) {
+            changePhoneBtn.addEventListener('click', handleChangePhone);
         }
 
         // Set up global callback for Google Sign-In
@@ -656,10 +929,32 @@ class UIManager {
         // Setup Quick Add Modal
         this.setupQuickAddModal();
 
-        // Google Logout Button
+        // Unified Logout Button (handles both Google and Phone)
         const logoutGoogleBtn = document.getElementById('logoutGoogleBtn');
         if (logoutGoogleBtn) {
-            logoutGoogleBtn.addEventListener('click', () => handleLogout());
+            logoutGoogleBtn.addEventListener('click', () => {
+                // Check which auth method is used
+                const phoneUser = localStorage.getItem('phoneUser');
+                if (phoneUser) {
+                    handlePhoneLogout();
+                } else {
+                    handleLogout();
+                }
+            });
+        }
+
+        // Sidebar logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                // Check which auth method is used
+                const phoneUser = localStorage.getItem('phoneUser');
+                if (phoneUser) {
+                    handlePhoneLogout();
+                } else {
+                    handleLogout();
+                }
+            });
         }
     }
 
