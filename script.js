@@ -479,6 +479,9 @@ class UIManager {
         document.getElementById('testWhatsappBtn').addEventListener('click', () => this.testWhatsApp());
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
         document.getElementById('exportSettings').addEventListener('click', () => this.exportSettings());
+
+        // Setup Quick Add Modal
+        this.setupQuickAddModal();
     }
 
     // ==================== VIEW MANAGEMENT ==================== //
@@ -560,17 +563,92 @@ class UIManager {
     }
 
     quickAddProduct(product) {
-        const quantity = prompt(`Enter quantity for ${product.name}:`, '1');
-        if (quantity !== null && quantity !== '') {
-            const qty = parseInt(quantity) || 1;
-            if (qty > 0) {
-                this.billing.addItemToBill(product.name, qty, product.price);
+        // Store current product for modal
+        this.currentQuickAddProduct = product;
+        
+        // Update modal with product details
+        const modal = document.getElementById('quickAddModal');
+        document.getElementById('quickAddProductImage').innerHTML = 
+            typeof product.image === 'string' && product.image.startsWith('data:') 
+                ? `<img src="${product.image}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;" alt="${product.name}">`
+                : `<span style="font-size: 60px;">${product.image}</span>`;
+        
+        document.getElementById('quickAddProductName').textContent = product.name;
+        document.getElementById('quickAddProductPrice').textContent = `₹${product.price.toFixed(2)}`;
+        document.getElementById('quickAddQuantity').value = '1';
+        document.getElementById('quickAddSize').value = '';
+        
+        // Show modal
+        modal.style.display = 'block';
+    }
+
+    setupQuickAddModal() {
+        const modal = document.getElementById('quickAddModal');
+        const closeBtn = modal.querySelector('.modal-close');
+        const cancelBtn = document.getElementById('cancelQuickAddBtn');
+        const confirmBtn = document.getElementById('confirmQuickAddBtn');
+        const quantityDecBtn = document.getElementById('quantityDecBtn');
+        const quantityIncBtn = document.getElementById('quantityIncBtn');
+        const quantityInput = document.getElementById('quickAddQuantity');
+        
+        // Close modal on X click
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        // Close modal on Cancel click
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        // Quantity decrease button
+        quantityDecBtn.addEventListener('click', () => {
+            let qty = parseInt(quantityInput.value) || 1;
+            if (qty > 1) {
+                quantityInput.value = qty - 1;
+            }
+        });
+        
+        // Quantity increase button
+        quantityIncBtn.addEventListener('click', () => {
+            let qty = parseInt(quantityInput.value) || 1;
+            quantityInput.value = qty + 1;
+        });
+        
+        // Confirm add to bill
+        confirmBtn.addEventListener('click', () => {
+            const product = this.currentQuickAddProduct;
+            if (!product) return;
+            
+            const quantity = parseInt(document.getElementById('quickAddQuantity').value) || 1;
+            const size = document.getElementById('quickAddSize').value;
+            
+            if (quantity > 0) {
+                // Add item with size information
+                let productNameWithSize = product.name;
+                if (size) {
+                    productNameWithSize = `${product.name} (${size})`;
+                }
+                
+                this.billing.addItemToBill(productNameWithSize, quantity, product.price);
                 this.updateBillDisplay();
-                alert(`${product.name} added to bill!`);
+                
+                // Close modal
+                modal.style.display = 'none';
+                this.currentQuickAddProduct = null;
+                
+                alert(`${product.name} x${quantity}${size ? ` (${size})` : ''} added to bill! ✅`);
             } else {
                 alert('Please enter a valid quantity');
             }
-        }
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     }
 
     displayQuickAddGallery() {
