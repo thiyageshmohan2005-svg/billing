@@ -5,7 +5,7 @@
 
 const CONFIG = {
     // Google OAuth 2.0 Configuration
-    GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
+    GOOGLE_CLIENT_ID: '539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com',
     
     // Phone OTP / Twilio Configuration (for SMS verification)
     TWILIO_CONFIG: {
