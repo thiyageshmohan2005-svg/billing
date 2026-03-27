@@ -8,6 +8,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <!-- Google Sign-In SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Configuration -->
+    <script src="config.js"></script>
+    <!-- Authentication Service -->
+    <script src="auth.js"></script>
+    <!-- Phone OTP Service -->
+    <script src="phone-otp.js"></script>
 </head>
 <body>
     <!-- Login Modal -->
@@ -26,7 +32,8 @@
                 <!-- ===== GOOGLE LOGIN SECTION ===== -->
                 <div id="googleLoginSection">
                     <!-- Google Sign-In Button -->
-                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"></div>
+                    <div id="googleSignInButton" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+                    <p style="color: #999; font-size: 13px; text-align: center; margin-top: 15px;">Or continue with:</p>
                 </div>
 
 
@@ -640,5 +647,139 @@
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- Initialize Google Sign-In after all scripts load -->
+    <script>
+        // Handle Google credential response
+        function onGoogleSignInSuccess(response) {
+            try {
+                // Use auth service to handle response
+                const authService = getAuthService();
+                const user = authService.handleCredentialResponse(response);
+                
+                // Update UI
+                if (user) {
+                    // Hide login modal
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.querySelector('.container').style.display = 'flex';
+                    
+                    // Reinitialize UI manager
+                    const billing = new BillingSystem();
+                    const ui = new UIManager(billing);
+                    
+                    console.log('✅ Successfully logged in as:', user.name);
+                }
+            } catch (error) {
+                console.error('❌ Google Sign-In Error:', error);
+                const authService = getAuthService();
+                authService.handleAuthError(error);
+            }
+        }
+        
+        // Fallback for backwards compatibility
+        window.handleCredentialResponse = onGoogleSignInSuccess;
+        window.onGoogleAuthSuccess = onGoogleSignInSuccess;
+        
+        window.addEventListener('DOMContentLoaded', function() {
+            // Log current origin for debugging
+            console.log('📍 App Origin:', window.location.origin);
+            console.log('📍 App Host:', window.location.host);
+            console.log('📍 App Protocol:', window.location.protocol);
+            
+            // Wait for Google SDK to load
+            let checkGoogle = setInterval(function() {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                    clearInterval(checkGoogle);
+                    
+                    try {
+                        google.accounts.id.initialize({
+                            client_id: '539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com',
+                            callback: onGoogleSignInSuccess,
+                            error_callback: function(error) {
+                                console.error('❌ Google OAuth Error:', error);
+                                const authService = getAuthService();
+                                authService.handleAuthError(error);
+                            },
+                            ux_mode: 'popup',
+                            auto_select: false
+                        });
+                        
+                        // Render Google Sign-In button in login modal
+                        const googleSignInButton = document.getElementById('googleSignInButton');
+                        if (googleSignInButton) {
+                            google.accounts.id.renderButton(
+                                googleSignInButton,
+                                { 
+                                    theme: 'outline', 
+                                    size: 'large',
+                                    text: 'signin_with',
+                                    width: '300'
+                                }
+                            );
+                            console.log('✅ Google Sign-In button rendered');
+                        }
+                        
+                        // Render button in header if it exists
+                        const headerButton = document.getElementById('g_id_onload');
+                        if (headerButton) {
+                            google.accounts.id.renderButton(
+                                headerButton,
+                                { 
+                                    theme: 'outline', 
+                                    size: 'medium'
+                                }
+                            );
+                        }
+                        
+                        console.log('✅ Google Sign-In initialized successfully');
+                    } catch(e) {
+                        console.error('❌ Error initializing Google Sign-In:', e);
+                        const authService = getAuthService();
+                        authService.handleAuthError(e);
+                    }
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(function() {
+                clearInterval(checkGoogle);
+                if (typeof google === 'undefined') {
+                    console.warn('⚠️ Google SDK did not load. Check internet connection.');
+                    const authError = document.getElementById('authError');
+                    if (authError) {
+                        authError.textContent = '⚠️ Google Sign-In unavailable. Please check your internet connection.';
+                        authError.style.display = 'block';
+                    }
+                }
+            }, 10000);
+            
+            // Setup demo login
+            const demoBtn = document.getElementById('demoLoginBtn');
+            if (demoBtn) {
+                demoBtn.addEventListener('click', function() {
+                    const userInfo = {
+                        name: 'Demo User',
+                        email: 'demo@billpro.com',
+                        picture: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234285F4" width="100" height="100"/><text x="50" y="70" font-size="60" text-anchor="middle" fill="white">👤</text></svg>',
+                        loggedInAt: new Date().toISOString()
+                    };
+                    
+                    // Save using auth service
+                    const authService = getAuthService();
+                    authService.user = userInfo;
+                    
+                    // Hide login modal
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.querySelector('.container').style.display = 'flex';
+                    
+                    // Reinitialize UI
+                    const billing = new BillingSystem();
+                    const ui = new UIManager(billing);
+                    
+                    console.log('✅ Demo login successful');
+                });
+            }
+        });
+    </script>
 </body>
 </html>

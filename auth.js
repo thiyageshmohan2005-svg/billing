@@ -6,6 +6,7 @@ class AuthService {
         this.user = null;
         this.token = null;
         this.isInitialized = false;
+        this.currentOrigin = window.location.origin;
         this.init();
     }
 
@@ -20,14 +21,21 @@ class AuthService {
             return;
         }
 
-        google.accounts.id.initialize({
-            client_id: this.googleClientId,
-            callback: (response) => this.handleCredentialResponse(response),
-            ux_mode: 'popup',
-            auto_select: false
-        });
+        try {
+            google.accounts.id.initialize({
+                client_id: this.googleClientId,
+                callback: (response) => this.handleCredentialResponse(response),
+                error_callback: (error) => this.handleAuthError(error),
+                ux_mode: 'popup',
+                auto_select: false
+            });
 
-        this.isInitialized = true;
+            this.isInitialized = true;
+            console.log('✅ Google Auth initialized for origin:', this.currentOrigin);
+        } catch (error) {
+            console.error('❌ Error initializing Google Auth:', error);
+            this.handleAuthError(error);
+        }
     }
 
     handleCredentialResponse(response) {
@@ -69,6 +77,66 @@ class AuthService {
         } catch (error) {
             console.error('Error handling credential response:', error);
             throw error;
+        }
+    }
+
+    handleAuthError(error) {
+        console.error('❌ Google Auth Error:', error);
+        
+        const errorMessage = error?.message || JSON.stringify(error);
+        const currentOrigin = window.location.origin;
+        
+        if (errorMessage.includes('origin_mismatch') || errorMessage.includes('Origin mismatch')) {
+            const helpMessage = `
+🔴 ERROR: Origin Mismatch
+
+Your app's origin doesn't match Google OAuth settings.
+
+Current App Origin: ${currentOrigin}
+
+FIX THIS:
+1. Go to: https://console.cloud.google.com/
+2. Select your BillPro project
+3. Go to: APIs & Services → Credentials
+4. Edit your OAuth 2.0 Client ID
+5. Add "${currentOrigin}" to "Authorized JavaScript origins"
+6. Save and refresh this page
+
+Alternative origins to add:
+- http://localhost
+- http://localhost:3000
+- http://127.0.0.1
+- Use "Demo Login" button while setting up
+            `;
+            console.warn(helpMessage);
+            this.showErrorMessage(helpMessage);
+        } else {
+            const helpMessage = `
+🔴 AUTH ERROR: ${errorMessage}
+
+Try these solutions:
+1. Check internet connection
+2. Clear browser cookies and cache
+3. Try "Demo Login" button
+4. Check console for more details
+
+Origin: ${currentOrigin}
+            `;
+            console.warn(helpMessage);
+            this.showErrorMessage(helpMessage);
+        }
+    }
+
+    showErrorMessage(message) {
+        const authError = document.getElementById('authError');
+        if (authError) {
+            authError.textContent = message;
+            authError.style.display = 'block';
+            authError.style.whiteSpace = 'pre-wrap';
+            authError.style.textAlign = 'left';
+            authError.style.fontSize = '11px';
+            authError.style.maxHeight = '300px';
+            authError.style.overflow = 'auto';
         }
     }
 

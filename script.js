@@ -1,55 +1,95 @@
+
 // ==================== GOOGLE LOGIN HANDLER ==================== //
 
 // This function is called when user signs in with Google
 function handleCredentialResponse(response) {
-    // Decode the JWT token to get user info
-    const base64Url = response.credential.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-        atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join('')
-    );
-    
-    const userData = JSON.parse(jsonPayload);
-    
-    // Store user data in localStorage
-    const userInfo = {
-        name: userData.name,
-        email: userData.email,
-        picture: userData.picture,
-        loggedInAt: new Date().toISOString()
-    };
-    localStorage.setItem('googleUser', JSON.stringify(userInfo));
-    
-    // Update UI
-    displayUserInfo(userInfo);
-    
-    console.log('✅ Logged in as:', userData.name);
+    try {
+        // Use auth service to handle the credential response
+        const authService = getAuthService();
+        const user = authService.handleCredentialResponse(response);
+        
+        if (user) {
+            // Hide login modal
+            document.getElementById('loginModal').style.display = 'none';
+            document.querySelector('.container').style.display = 'flex';
+            
+            // Update UI - Show user info in header
+            displayUserInfo(user);
+            
+            // Re-enable the main app UI
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            
+            console.log('✅ Logged in as:', user.name);
+        }
+    } catch (error) {
+        console.error('❌ Error handling Google Sign-In:', error);
+        const authError = document.getElementById('authError');
+        if (authError) {
+            authError.textContent = '❌ ' + error.message;
+            authError.style.display = 'block';
+        }
+    }
 }
 
 // Display user info in header
 function displayUserInfo(userInfo) {
-    document.getElementById('googleLoginContainer').style.display = 'none';
-    document.getElementById('userWelcome').style.display = 'inline-block';
-    document.getElementById('userDisplayName').textContent = '👤 ' + userInfo.name;
-    document.getElementById('userPicture').src = userInfo.picture;
+    try {
+        const googleLoginContainer = document.getElementById('googleLoginContainer');
+        const userWelcome = document.getElementById('userWelcome');
+        
+        if (googleLoginContainer) googleLoginContainer.style.display = 'none';
+        if (userWelcome) userWelcome.style.display = 'inline-block';
+        
+        const userDisplayName = document.getElementById('userDisplayName');
+        const userPicture = document.getElementById('userPicture');
+        
+        if (userDisplayName && userInfo.name) {
+            userDisplayName.textContent = '👤 ' + userInfo.name;
+        }
+        if (userPicture && userInfo.picture) {
+            userPicture.src = userInfo.picture;
+        }
+    } catch(e) {
+        console.error('Error displaying user info:', e);
+    }
 }
 
 // Logout function
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('googleUser');
-        location.reload();
+        try {
+            const authService = getAuthService();
+            if (authService && authService.logout) {
+                authService.logout();
+            }
+            // Clear localStorage
+            localStorage.removeItem('googleUser');
+            localStorage.removeItem('googleAuthSession');
+            localStorage.removeItem('phoneUser');
+            localStorage.removeItem('loggedInUser');
+            location.reload();
+        } catch(e) {
+            console.error('Error during logout:', e);
+            location.reload();
+        }
     }
 }
 
 // Check if user is already logged in on page load
 function checkLoginStatus() {
-    const savedUser = localStorage.getItem('googleUser');
-    if (savedUser) {
-        const userInfo = JSON.parse(savedUser);
-        displayUserInfo(userInfo);
+    try {
+        const authService = getAuthService();
+        if (authService && authService.isAuthenticated()) {
+            const user = authService.getCurrentUser();
+            if (user) {
+                displayUserInfo(user);
+                document.getElementById('loginModal').style.display = 'none';
+                document.querySelector('.container').style.display = 'flex';
+            }
+        }
+    } catch(e) {
+        console.error('Error checking login status:', e);
     }
 }
 

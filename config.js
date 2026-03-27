@@ -3,9 +3,14 @@
  * Update this file with your Google OAuth 2.0 and Twilio SMS credentials
  */
 
+// Detect current origin for debugging
+const currentOrigin = window.location.origin;
+console.log('🌐 Current App Origin:', currentOrigin);
+
 const CONFIG = {
     // Google OAuth 2.0 Configuration
     GOOGLE_CLIENT_ID: '539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com',
+    CURRENT_ORIGIN: currentOrigin,
     
     // Phone OTP / Twilio Configuration (for SMS verification)
     TWILIO_CONFIG: {
