@@ -70,7 +70,7 @@ BillPro now includes enterprise-grade Google OAuth 2.0 authentication. This guid
 
 1. **Open `config.js`**
    ```
-   c:\Users\thiya\OneDrive\Desktop\billing software\config.js
+   c:\Users\thiya\OneDrive\Desktop\billig software\config.js
    ```
 
 2. **Replace this line:**
@@ -87,7 +87,7 @@ BillPro now includes enterprise-grade Google OAuth 2.0 authentication. This guid
 
 ### Step 3: Test the Setup
 
-1. **Open your billing app** in a web browser
+1. **Open your billig app** in a web browser
 2. **You should see:**
    - Login screen with "Sign in with Google" button
    - "Demo Login" button for testing without Google
@@ -298,4 +298,4 @@ For issues with authentication:
 
 ---
 
-**Your billing system is now secured with enterprise-grade Google authentication!** 🔐
+**Your billig system is now secured with enterprise-grade Google authentication!** 🔐

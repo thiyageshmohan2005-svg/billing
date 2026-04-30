@@ -38,7 +38,7 @@
 
 ### Step 2: Add Client ID to Your App
 
-1. Open: `c:\Users\thiya\OneDrive\Desktop\billing software\index.html`
+1. Open: `c:\Users\thiya\OneDrive\Desktop\billig software\index.html`
 2. Find this line (around line 30):
    ```html
    data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
