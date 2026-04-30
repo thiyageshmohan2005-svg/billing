@@ -719,7 +719,8 @@
                                     authError.style.display = 'block';
                                 }
                             },
-                            ux_mode: 'popup',
+                            ux_mode: 'redirect',
+                            login_uri: window.location.origin,
                             auto_select: false
                         });
 
@@ -735,6 +736,9 @@
                             console.log('✅ Google Sign-In button rendered');
                         }
                         console.log('✅ Google Sign-In initialized');
+                        
+                        // One Tap prompt - works better on mobile
+                        google.accounts.id.prompt();
                     } catch (e) {
                         console.error('❌ Google init failed:', e);
                         const authError = document.getElementById('authError');
