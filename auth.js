@@ -58,6 +58,9 @@ class AuthService {
                 expiresIn: 3600
             };
 
+            // Set current user for multi-user support
+            localStorage.setItem('currentUser', this.user.email);
+            
             // Save to localStorage
             this.saveSession();
 

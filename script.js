@@ -42,7 +42,9 @@ function displayUserInfo(userInfo) {
         const userPicture = document.getElementById('userPicture');
 
         if (userDisplayName && userInfo.name) {
-            userDisplayName.textContent = '👤 ' + userInfo.name;
+            // Show name and email for multi-user support
+            const emailInfo = userInfo.email ? ` (${userInfo.email})` : '';
+            userDisplayName.textContent = '👤 ' + userInfo.name + emailInfo;
         }
         if (userPicture && userInfo.picture) {
             if (userInfo.picture.startsWith('http') || userInfo.picture.startsWith('data:')) {
@@ -66,11 +68,12 @@ function handleLogout() {
             if (authService && authService.logout) {
                 authService.logout();
             }
-            // Clear localStorage
+            // Clear session keys only (keep user data)
             localStorage.removeItem('googleUser');
             localStorage.removeItem('googleAuthSession');
             localStorage.removeItem('phoneUser');
             localStorage.removeItem('loggedInUser');
+            localStorage.removeItem('currentUser');
             location.reload();
         } catch(e) {
             console.error('Error during logout:', e);
@@ -86,9 +89,14 @@ function checkLoginStatus() {
         if (authService && authService.isAuthenticated()) {
             const user = authService.getCurrentUser();
             if (user) {
+                // Set current user for data loading
+                localStorage.setItem('currentUser', user.email);
+                
                 displayUserInfo(user);
                 document.getElementById('loginModal').style.display = 'none';
                 document.querySelector('.container').style.display = 'flex';
+                
+                console.log('✅ Restored session for:', user.email);
             }
         }
     } catch(e) {
@@ -226,6 +234,7 @@ async function handleVerifyOTP() {
             // Store phone user login info
             const userInfo = {
                 name: 'Phone User',
+                email: phoneNumber, // Use phone as email identifier for multi-user
                 phone: phoneNumber,
                 picture: '📱',
                 loginMethod: 'phone',
@@ -233,6 +242,7 @@ async function handleVerifyOTP() {
             };
             localStorage.setItem('phoneUser', JSON.stringify(userInfo));
             localStorage.setItem('loggedInUser', 'phone');
+            localStorage.setItem('currentUser', phoneNumber); // For multi-user data isolation
 
             // Hide login modal
             document.getElementById('loginModal').style.display = 'none';
@@ -341,23 +351,63 @@ function handlePhoneLogout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('phoneUser');
         localStorage.removeItem('loggedInUser');
+        localStorage.removeItem('currentUser');
         location.reload();
     }
 }
 
 // ==================== DATA MANAGEMENT ==================== //
 
+// Helper to get user-specific storage key
+function getUserKey(baseKey) {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+        // Sanitize email for localStorage key (replace @ and . with _)
+        const sanitizedUser = currentUser.replace(/[@.]/g, '_');
+        return `${baseKey}_${sanitizedUser}`;
+    }
+    return baseKey; // Fallback for non-logged-in state
+}
+
+// Helper to get current user email
+function getCurrentUserEmail() {
+    return localStorage.getItem('currentUser');
+}
+
 class BillingSystem {
     constructor() {
-        this.bills = this.loadData('bills') || [];
-        this.products = this.loadData('products') || this.getDefaultProducts();
-        this.customers = this.loadData('customers') || {};
-        this.settings = this.loadData('settings') || this.getDefaultSettings();
+        // Load user-specific data
+        this.bills = this.loadUserData('bills') || [];
+        this.products = this.loadUserData('products') || this.getDefaultProducts();
+        this.customers = this.loadUserData('customers') || {};
+        this.settings = this.loadUserData('settings') || this.getDefaultSettings();
         this.currentBill = null;
         this.selectedPaymentMethod = 'cash';
         this.gstEnabled = false;
         this.charts = {};
         this.init();
+    }
+
+    // Load data with user-specific key
+    loadUserData(key) {
+        const userKey = getUserKey(key);
+        try {
+            const data = localStorage.getItem(userKey);
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            console.error('Error loading user data:', e);
+            return null;
+        }
+    }
+
+    // Save data with user-specific key
+    saveUserData(key, data) {
+        const userKey = getUserKey(key);
+        try {
+            localStorage.setItem(userKey, JSON.stringify(data));
+        } catch (e) {
+            console.error('Error saving user data:', e);
+        }
     }
 
     getDefaultSettings() {
@@ -378,30 +428,32 @@ class BillingSystem {
 
     // ==================== DATA PERSISTENCE ==================== //
     saveData(key, data) {
-        try {
-            localStorage.setItem(key, JSON.stringify(data));
-        } catch (e) {
-            console.error('Error saving data:', e);
-        }
+        // Use user-specific key if logged in
+        this.saveUserData(key, data);
     }
 
     loadData(key) {
-        try {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.error('Error loading data:', e);
-            return null;
-        }
+        // Use user-specific key if logged in
+        return this.loadUserData(key);
     }
 
     clearAllData() {
         if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-            localStorage.clear();
+            // Clear only current user's data
+            const userKey = getUserKey('bills');
+            const productsKey = getUserKey('products');
+            const customersKey = getUserKey('customers');
+            const settingsKey = getUserKey('settings');
+            
+            localStorage.removeItem(userKey);
+            localStorage.removeItem(productsKey);
+            localStorage.removeItem(customersKey);
+            localStorage.removeItem(settingsKey);
+            
             this.bills = [];
             this.products = this.getDefaultProducts();
             this.customers = {};
-            this.saveData('products', this.products);
+            this.saveUserData('products', this.products);
             location.reload();
         }
     }

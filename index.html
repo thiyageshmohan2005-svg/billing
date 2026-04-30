@@ -107,7 +107,36 @@
         <!-- Main Content Area -->
         <main class="main-content">        ux_mode: 'redirect',
         login_uri: 'https://billig.netlify.app/',
-        auto_select: false
+        auto_select: false        localStorage.removeItem('currentUser'); // Does NOT delete user data        localStorage.removeItem('currentUser'); // Does NOT delete user data        // After successful Google login:
+        localStorage.setItem('currentUser', this.user.email);        // After successful Google login:
+        localStorage.setItem('currentUser', this.user.email);        // After successful Google login:
+        localStorage.setItem('currentUser', this.user.email);        // After successful Google login:
+        localStorage.setItem('currentUser', this.user.email);        // After successful Google login:
+        localStorage.setItem('currentUser', this.user.email);        // Helper to get user-specific storage key
+        function getUserKey(baseKey) {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                const sanitizedUser = currentUser.replace(/[@.]/g, '_');
+                return `${baseKey}_${sanitizedUser}`;
+            }
+            return baseKey;
+        }        // Helper to get user-specific storage key
+        function getUserKey(baseKey) {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                const sanitizedUser = currentUser.replace(/[@.]/g, '_');
+                return `${baseKey}_${sanitizedUser}`;
+            }
+            return baseKey;
+        }        // Helper to get user-specific storage key
+        function getUserKey(baseKey) {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                const sanitizedUser = currentUser.replace(/[@.]/g, '_');
+                return `${baseKey}_${sanitizedUser}`;
+            }
+            return baseKey;
+        }
             <!-- Header -->
             <header class="header">
                 <h1 id="pageTitle">Create Bill</h1>
