@@ -35,25 +35,28 @@ function handleCredentialResponse(response) {
 // Display user info in header
 function displayUserInfo(userInfo) {
     try {
-        const googleLoginContainer = document.getElementById('googleLoginContainer');
         const userWelcome = document.getElementById('userWelcome');
-        
-        if (googleLoginContainer) googleLoginContainer.style.display = 'none';
-        if (userWelcome) userWelcome.style.display = 'inline-block';
-        
+        if (userWelcome) userWelcome.style.display = 'inline-flex';
+
         const userDisplayName = document.getElementById('userDisplayName');
         const userPicture = document.getElementById('userPicture');
-        
+
         if (userDisplayName && userInfo.name) {
             userDisplayName.textContent = '👤 ' + userInfo.name;
         }
         if (userPicture && userInfo.picture) {
-            userPicture.src = userInfo.picture;
+            if (userInfo.picture.startsWith('http') || userInfo.picture.startsWith('data:')) {
+                userPicture.src = userInfo.picture;
+                userPicture.style.display = 'inline-block';
+            } else {
+                userPicture.style.display = 'none';
+            }
         }
     } catch(e) {
         console.error('Error displaying user info:', e);
     }
 }
+
 
 // Logout function
 function handleLogout() {
@@ -93,10 +96,7 @@ function checkLoginStatus() {
     }
 }
 
-// Call this when page loads
-window.addEventListener('DOMContentLoaded', () => {
-    checkLoginStatus();
-});
+// Called on page load to restore session — handled by UIManager.init() below
 
 // ==================== PHONE OTP LOGIN HANDLER ==================== //
 
@@ -2373,4 +2373,6 @@ class UIManager {
 document.addEventListener('DOMContentLoaded', () => {
     const billing = new BillingSystem();
     const ui = new UIManager(billing);
+    // Expose globally so the Google Sign-In callback can call showMainApp()
+    window._uiManager = ui;
 });

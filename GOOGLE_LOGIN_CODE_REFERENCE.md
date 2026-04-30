@@ -30,10 +30,12 @@
         <!-- Google Login Container -->
         <div id="googleLoginContainer" style="display: inline-block; margin-left: 20px;">
             <!-- Google Sign-In Button will appear here -->
-            <div id="g_id_onload"
-                 data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
-                 data-callback="handleCredentialResponse">
-            </div>
+           <div id="g_id_onload"
+     data-client_id="539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com"
+     data-callback="handleCredentialResponse">
+
+</div>
+<div id="googleLoginContainer">
             <div class="g_id_signin" data-type="standard" data-size="medium"></div>
         </div>
         

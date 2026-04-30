@@ -11,30 +11,23 @@ class AuthService {
     }
 
     init() {
-        // Initialize Google Sign-In
-        this.initializeGoogleSignIn();
+        // NOTE: Google SDK initialization is handled in index.html after SDK loads.
+        // AuthService only manages session data and user state.
+        this.isInitialized = false;
     }
 
     initializeGoogleSignIn() {
+        // Called externally by index.html after the Google SDK is confirmed loaded.
         if (typeof google === 'undefined') {
             console.warn('Google SDK not loaded. Authentication may not work properly.');
             return;
         }
 
         try {
-            google.accounts.id.initialize({
-                client_id: this.googleClientId,
-                callback: (response) => this.handleCredentialResponse(response),
-                error_callback: (error) => this.handleAuthError(error),
-                ux_mode: 'popup',
-                auto_select: false
-            });
-
             this.isInitialized = true;
-            console.log('✅ Google Auth initialized for origin:', this.currentOrigin);
+            console.log('✅ Google Auth session manager ready for origin:', this.currentOrigin);
         } catch (error) {
-            console.error('❌ Error initializing Google Auth:', error);
-            this.handleAuthError(error);
+            console.error('❌ Error in AuthService setup:', error);
         }
     }
 

@@ -112,18 +112,10 @@
                 <div class="header-actions">
                     <span id="currentDateTime"></span>
                     
-                    <!-- Google Login Container -->
-                    <div id="googleLoginContainer" style="display: inline-block; margin-left: 20px;">
-                        <!-- Google Sign-In Button will appear here -->
-                        <div id="g_id_onload"
-                             data-client_id="539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com"
-                             data-callback="handleCredentialResponse">
-                        </div>
-                        <div class="g_id_signin" data-type="standard" data-size="medium"></div>
-                    </div>
+                    <!-- Google Login Container (button rendered in login modal only) -->
                     
                     <!-- User Welcome Section (Hidden until login) -->
-                    <div id="userWelcome" style="display: none; margin-left: 20px; padding: 10px; background: #e8f5e9; border-radius: 8px; display: inline-block;">
+                    <div id="userWelcome" style="display: none; margin-left: 20px; padding: 10px; background: #e8f5e9; border-radius: 8px;">
                         <img id="userPicture" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">
                         <span id="userDisplayName" style="font-weight: bold; color: #2e7d32;"></span>
                         <button id="logoutGoogleBtn" class="btn btn-small" style="margin-left: 10px; padding: 5px 10px; font-size: 12px;">Logout</button>
@@ -647,138 +639,122 @@
     </div>
 
     <script src="script.js"></script>
-    
-    <!-- Initialize Google Sign-In after all scripts load -->
+
+    <!-- Google Sign-In Initialization (runs AFTER script.js so UIManager is available) -->
     <script>
-        // Handle Google credential response
+        // ── Single source of truth: set by script.js DOMContentLoaded ──
+        // We expose a global so the Google callback can reach the UIManager instance.
+        window._uiManager = null;
+
+        // Called by Google SDK after successful sign-in
         function onGoogleSignInSuccess(response) {
             try {
-                // Use auth service to handle response
                 const authService = getAuthService();
                 const user = authService.handleCredentialResponse(response);
-                
-                // Update UI
+
                 if (user) {
-                    // Hide login modal
-                    document.getElementById('loginModal').style.display = 'none';
-                    document.querySelector('.container').style.display = 'flex';
-                    
-                    // Reinitialize UI manager
-                    const billing = new BillingSystem();
-                    const ui = new UIManager(billing);
-                    
-                    console.log('✅ Successfully logged in as:', user.name);
+                    // Let the existing UIManager handle the transition (avoids duplicate instances)
+                    if (window._uiManager) {
+                        window._uiManager.showMainApp();
+                    } else {
+                        // Fallback if UIManager not ready yet
+                        document.getElementById('loginModal').style.display = 'none';
+                        document.querySelector('.container').style.display = 'flex';
+                        displayUserInfo(user);
+                    }
+                    console.log('✅ Google login successful:', user.name);
                 }
             } catch (error) {
                 console.error('❌ Google Sign-In Error:', error);
-                const authService = getAuthService();
-                authService.handleAuthError(error);
+                const authError = document.getElementById('authError');
+                if (authError) {
+                    authError.textContent = '❌ Sign-in failed: ' + error.message;
+                    authError.style.display = 'block';
+                }
             }
         }
-        
-        // Fallback for backwards compatibility
+
+        // Make callback available globally (Google SDK needs this)
         window.handleCredentialResponse = onGoogleSignInSuccess;
-        window.onGoogleAuthSuccess = onGoogleSignInSuccess;
-        
-        window.addEventListener('DOMContentLoaded', function() {
-            // Log current origin for debugging
-            console.log('📍 App Origin:', window.location.origin);
-            console.log('📍 App Host:', window.location.host);
-            console.log('📍 App Protocol:', window.location.protocol);
-            
-            // Wait for Google SDK to load
-            let checkGoogle = setInterval(function() {
+        window.onGoogleAuthSuccess     = onGoogleSignInSuccess;
+
+        // Wire up the header logout button
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('📍 Origin:', window.location.origin);
+
+            // Header logout button
+            const logoutGoogleBtn = document.getElementById('logoutGoogleBtn');
+            if (logoutGoogleBtn) {
+                logoutGoogleBtn.addEventListener('click', function () {
+                    if (confirm('Are you sure you want to logout?')) {
+                        const authService = getAuthService();
+                        if (authService) authService.logout();
+                        localStorage.removeItem('googleAuthSession');
+                        localStorage.removeItem('phoneUser');
+                        location.reload();
+                    }
+                });
+            }
+
+            // Wait for Google SDK to load, then initialize ONCE
+            const checkGoogle = setInterval(function () {
                 if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
                     clearInterval(checkGoogle);
-                    
                     try {
                         google.accounts.id.initialize({
                             client_id: '539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com',
                             callback: onGoogleSignInSuccess,
-                            error_callback: function(error) {
-                                console.error('❌ Google OAuth Error:', error);
-                                const authService = getAuthService();
-                                authService.handleAuthError(error);
+                            error_callback: function (err) {
+                                console.error('❌ Google OAuth Error:', err);
+                                const msg = JSON.stringify(err);
+                                let hint = '';
+                                if (msg.includes('origin_mismatch')) {
+                                    hint = ' — Add "' + location.origin + '" to Authorized JavaScript Origins in Google Cloud Console.';
+                                }
+                                const authError = document.getElementById('authError');
+                                if (authError) {
+                                    authError.textContent = '❌ Google Error: ' + msg + hint;
+                                    authError.style.display = 'block';
+                                }
                             },
                             ux_mode: 'popup',
                             auto_select: false
                         });
-                        
-                        // Render Google Sign-In button in login modal
-                        const googleSignInButton = document.getElementById('googleSignInButton');
-                        if (googleSignInButton) {
-                            google.accounts.id.renderButton(
-                                googleSignInButton,
-                                { 
-                                    theme: 'outline', 
-                                    size: 'large',
-                                    text: 'signin_with',
-                                    width: '300'
-                                }
-                            );
+
+                        // Render the button inside the login modal
+                        const btnEl = document.getElementById('googleSignInButton');
+                        if (btnEl) {
+                            google.accounts.id.renderButton(btnEl, {
+                                theme: 'outline',
+                                size: 'large',
+                                text: 'signin_with',
+                                width: '300'
+                            });
                             console.log('✅ Google Sign-In button rendered');
                         }
-                        
-                        // Render button in header if it exists
-                        const headerButton = document.getElementById('g_id_onload');
-                        if (headerButton) {
-                            google.accounts.id.renderButton(
-                                headerButton,
-                                { 
-                                    theme: 'outline', 
-                                    size: 'medium'
-                                }
-                            );
+                        console.log('✅ Google Sign-In initialized');
+                    } catch (e) {
+                        console.error('❌ Google init failed:', e);
+                        const authError = document.getElementById('authError');
+                        if (authError) {
+                            authError.textContent = '❌ Google init error: ' + e.message;
+                            authError.style.display = 'block';
                         }
-                        
-                        console.log('✅ Google Sign-In initialized successfully');
-                    } catch(e) {
-                        console.error('❌ Error initializing Google Sign-In:', e);
-                        const authService = getAuthService();
-                        authService.handleAuthError(e);
                     }
                 }
             }, 100);
-            
-            // Timeout after 10 seconds
-            setTimeout(function() {
+
+            // Show error if SDK never loads after 10s
+            setTimeout(function () {
                 clearInterval(checkGoogle);
                 if (typeof google === 'undefined') {
-                    console.warn('⚠️ Google SDK did not load. Check internet connection.');
                     const authError = document.getElementById('authError');
                     if (authError) {
-                        authError.textContent = '⚠️ Google Sign-In unavailable. Please check your internet connection.';
+                        authError.textContent = '⚠️ Google Sign-In unavailable — check your internet connection.';
                         authError.style.display = 'block';
                     }
                 }
             }, 10000);
-            
-            // Setup demo login
-            const demoBtn = document.getElementById('demoLoginBtn');
-            if (demoBtn) {
-                demoBtn.addEventListener('click', function() {
-                    const userInfo = {
-                        name: 'Demo User',
-                        email: 'demo@billpro.com',
-                        picture: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234285F4" width="100" height="100"/><text x="50" y="70" font-size="60" text-anchor="middle" fill="white">👤</text></svg>',
-                        loggedInAt: new Date().toISOString()
-                    };
-                    
-                    // Save using auth service
-                    const authService = getAuthService();
-                    authService.user = userInfo;
-                    
-                    // Hide login modal
-                    document.getElementById('loginModal').style.display = 'none';
-                    document.querySelector('.container').style.display = 'flex';
-                    
-                    // Reinitialize UI
-                    const billing = new BillingSystem();
-                    const ui = new UIManager(billing);
-                    
-                    console.log('✅ Demo login successful');
-                });
-            }
         });
     </script>
 </body>

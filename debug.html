@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BillPro - Google Auth Diagnostic</title>
+    <style>
+        body { font-family: monospace; background: #0d1117; color: #e6edf3; padding: 20px; }
+        h1 { color: #58a6ff; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 10px 0; }
+        .ok   { color: #3fb950; } /* green */
+        .err  { color: #f85149; } /* red */
+        .warn { color: #d29922; } /* yellow */
+        .info { color: #58a6ff; } /* blue */
+        .label { font-size: 12px; color: #8b949e; margin-top: 4px; }
+        button { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 4px; }
+        button:hover { background: #2ea043; }
+        #log { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; height: 300px; overflow-y: auto; font-size: 13px; }
+        .log-err  { color: #f85149; }
+        .log-ok   { color: #3fb950; }
+        .log-info { color: #58a6ff; }
+        .log-warn { color: #d29922; }
+        #googleBtn { margin: 10px 0; }
+    </style>
+</head>
+<body>
+<h1>🔍 BillPro — Google Auth Diagnostic</h1>
+
+<div class="card">
+    <b>Environment Info</b><br>
+    <span class="label">Origin:</span> <span id="origin" class="info"></span><br>
+    <span class="label">Protocol:</span> <span id="protocol" class="info"></span><br>
+    <span class="label">Host:</span> <span id="host" class="info"></span><br>
+    <span class="label">Google SDK Loaded:</span> <span id="sdkStatus"></span><br>
+    <span class="label">Client ID:</span> <span class="info">539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com</span>
+</div>
+
+<div class="card">
+    <b>Checklist</b>
+    <ul id="checklist"></ul>
+</div>
+
+<div class="card">
+    <b>Test Google Sign-In</b><br>
+    <div id="googleBtn"></div>
+    <button onclick="testGoogleSignIn()">▶ Manually Trigger Sign-In Popup</button>
+    <button onclick="clearLog()">🗑 Clear Log</button>
+</div>
+
+<div class="card">
+    <b>Live Log</b>
+    <div id="log"></div>
+</div>
+
+<!-- Google GSI SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer onload="onGoogleSdkLoad()" onerror="onGoogleSdkError()"></script>
+
+<script>
+const CLIENT_ID = '539888137547-ma3pupkbg2v6vq2me22qpoerm2tue696.apps.googleusercontent.com';
+let googleReady = false;
+
+function log(msg, type='info') {
+    const el = document.getElementById('log');
+    const line = document.createElement('div');
+    line.className = 'log-' + type;
+    line.textContent = new Date().toLocaleTimeString() + ' › ' + msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+    console[type === 'err' ? 'error' : type === 'warn' ? 'warn' : 'log'](msg);
+}
+
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+function setCheck(id, ok, msg) {
+    const li = document.getElementById(id);
+    if (li) { li.className = ok ? 'ok' : 'err'; li.textContent = (ok ? '✅' : '❌') + ' ' + msg; }
+}
+
+// Populate environment info
+document.getElementById('origin').textContent = window.location.origin;
+document.getElementById('protocol').textContent = window.location.protocol;
+document.getElementById('host').textContent = window.location.host;
+
+// Checklist items
+const checks = [
+    ['check-protocol', 'Running on HTTP (not file://)'],
+    ['check-sdk',      'Google SDK loaded'],
+    ['check-init',     'google.accounts.id.initialize() succeeded'],
+    ['check-button',   'Google Sign-In button rendered'],
+];
+const ul = document.getElementById('checklist');
+checks.forEach(([id, label]) => {
+    const li = document.createElement('li');
+    li.id = id; li.textContent = '⏳ ' + label;
+    ul.appendChild(li);
+});
+
+// Check 1: Protocol
+const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
+setCheck('check-protocol', isHttp,
+    isHttp ? 'Running on HTTP — origin: ' + location.origin
+           : 'ERROR: Running as file:// — Google OAuth blocked! Open via http://localhost:8080');
+if (!isHttp) log('FATAL: You are opening this as a file:// URL. Google OAuth will NOT work. Open via http://localhost:8080/debug.html', 'err');
+
+// Check 2 & beyond — after SDK loads
+function onGoogleSdkLoad() {
+    log('Google SDK loaded successfully', 'ok');
+    document.getElementById('sdkStatus').innerHTML = '<span class="ok">✅ Loaded</span>';
+    setCheck('check-sdk', true, 'Google SDK loaded');
+    initGoogle();
+}
+
+function onGoogleSdkError() {
+    log('FAILED to load Google SDK — check your internet connection or if accounts.google.com is reachable', 'err');
+    document.getElementById('sdkStatus').innerHTML = '<span class="err">❌ Failed to load</span>';
+    setCheck('check-sdk', false, 'Google SDK FAILED to load — check internet connection');
+}
+
+function initGoogle() {
+    try {
+        google.accounts.id.initialize({
+            client_id: CLIENT_ID,
+            callback: onSignInSuccess,
+            error_callback: onSignInError,
+            ux_mode: 'popup',
+            auto_select: false
+        });
+        log('google.accounts.id.initialize() succeeded', 'ok');
+        setCheck('check-init', true, 'google.accounts.id.initialize() succeeded');
+
+        // Render button
+        const btnEl = document.getElementById('googleBtn');
+        google.accounts.id.renderButton(btnEl, {
+            theme: 'outline', size: 'large', text: 'signin_with', width: '300'
+        });
+        log('Google Sign-In button rendered', 'ok');
+        setCheck('check-button', true, 'Google Sign-In button rendered');
+    } catch(e) {
+        log('google.accounts.id.initialize() FAILED: ' + e.message, 'err');
+        setCheck('check-init', false, 'Initialize FAILED: ' + e.message);
+    }
+}
+
+function testGoogleSignIn() {
+    if (!googleReady && typeof google !== 'undefined') initGoogle();
+    try {
+        google.accounts.id.prompt((notification) => {
+            log('Prompt status: ' + notification.getMomentType(), 'info');
+            if (notification.isNotDisplayed()) {
+                log('Popup NOT displayed. Reason: ' + notification.getNotDisplayedReason(), 'err');
+                log('Common causes: origin_mismatch, cookies blocked, popup blocked', 'warn');
+            }
+            if (notification.isSkippedMoment()) {
+                log('Skipped. Reason: ' + notification.getSkippedReason(), 'warn');
+            }
+        });
+    } catch(e) {
+        log('Error triggering sign-in: ' + e.message, 'err');
+    }
+}
+
+function onSignInSuccess(response) {
+    log('✅ SIGN-IN SUCCESSFUL! Credential received.', 'ok');
+    try {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        log('User: ' + payload.name + ' (' + payload.email + ')', 'ok');
+    } catch(e) { log('(Could not decode token)', 'warn'); }
+}
+
+function onSignInError(error) {
+    const msg = JSON.stringify(error);
+    log('❌ SIGN-IN ERROR: ' + msg, 'err');
+    if (msg.includes('origin_mismatch')) {
+        log('FIX: Add "' + location.origin + '" to Authorized JavaScript Origins in Google Cloud Console', 'warn');
+        log('Go to: https://console.cloud.google.com → APIs & Services → Credentials → Edit OAuth Client', 'warn');
+    }
+}
+
+// Timeout if SDK never loads
+setTimeout(() => {
+    if (typeof google === 'undefined') {
+        onGoogleSdkError();
+    }
+}, 8000);
+</script>
+</body>
+</html>

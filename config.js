@@ -43,11 +43,5 @@ const CONFIG = {
     AUTO_SAVE_INTERVAL: 30000, // 30 seconds
 };
 
-// Initialize authentication service with client ID
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize auth service with proper client ID
-    const auth = initializeAuthService(CONFIG.GOOGLE_CLIENT_ID);
-    
-    // Store config globally
-    window.APP_CONFIG = CONFIG;
-});
+// Store config globally (auth is initialized in index.html after Google SDK loads)
+window.APP_CONFIG = CONFIG;
