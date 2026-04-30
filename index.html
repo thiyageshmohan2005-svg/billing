@@ -91,7 +91,7 @@
                 </button>
             </nav>
             <div class="sidebar-footer">
-                <div id="userInfo" style="padding: 10px; margin-bottom: 10px; background: #f5f5f5; border-radius: 4px; font-size: 12px; display: none;">
+                <div id="userInfo" style="padding: 10px; margin-bottom: 10px; background: a#a87777; border-radius: 4px; font-size: 12px; display: none;">
                     <p style="margin: 0 0 5px 0; font-weight: bold;" id="userName">User</p>
                     <p style="margin: 0; color: #666; font-size: 11px;" id="userEmail">email@example.com</p>
                 </div>
@@ -105,7 +105,9 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="main-content">
+        <main class="main-content">        ux_mode: 'redirect',
+        login_uri: 'https://billig.netlify.app/',
+        auto_select: false
             <!-- Header -->
             <header class="header">
                 <h1 id="pageTitle">Create Bill</h1>
@@ -717,7 +719,8 @@
                                     authError.style.display = 'block';
                                 }
                             },
-                            ux_mode: 'popup',
+                            ux_mode: 'redirect',
+                            login_uri: 'https://billig.netlify.app/',
                             auto_select: false
                         });
 
